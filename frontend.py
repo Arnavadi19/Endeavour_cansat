@@ -1,6 +1,7 @@
 import sys
-from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTextEdit
-from PyQt6.QtCore import QTimer
+from PyQt6.QtWidgets import QApplication, QMainWindow, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QTableWidget, QTableWidgetItem
+from PyQt6.QtCore import QTimer, QTime, Qt
+from PyQt6.QtGui import QFont
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
@@ -11,11 +12,7 @@ class CanSatGCS(QMainWindow):
         super().__init__()
 
         self.setWindowTitle("CanSat Ground Control Station")
-        self.setGeometry(100, 100, 1000, 800)
-
-        self.telemetry_label = QLabel("Telemetry Data:")
-        self.telemetry_display = QTextEdit()
-        self.telemetry_display.setReadOnly(True)
+        self.setGeometry(100, 100, 1920, 1080)
 
         self.altitude_plot = self.create_plot("Altitude", "Time", "Altitude (m)")
         self.pressure_plot = self.create_plot("Pressure", "Time", "Pressure (Pa)")
@@ -23,16 +20,31 @@ class CanSatGCS(QMainWindow):
         self.temperature_plot = self.create_plot("Temperature", "Time", "Temperature (°C)")
 
         self.start_button = QPushButton("Start Simulation mode")
-        self.stop_button = QPushButton("Stop Simluation mode")
+        self.stop_button = QPushButton("Stop Simulation mode")
+
+        self.current_time_label = QLabel("")
+        self.current_time_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        self.current_time_label.setFont(QFont("Arial", 12))
+
+        self.endeavour_label = QLabel("Endeavour: Team #2006")
+        self.endeavour_label.setAlignment(Qt.AlignmentFlag.AlignLeft)
+        self.endeavour_label.setFont(QFont("Arial", 12))
+
+        self.table_widget = QTableWidget()
+        self.table_widget.setColumnCount(2)
+        self.table_widget.setRowCount(13)
+        self.table_widget.setHorizontalHeaderLabels(["Attribute", "Value"])
 
         self.start_button.clicked.connect(self.start_telemetry)
         self.stop_button.clicked.connect(self.stop_telemetry)
 
+        top_layout = QHBoxLayout()
+        top_layout.addWidget(self.start_button)
+        top_layout.addWidget(self.stop_button)
+        top_layout.addStretch(1)
+
         left_layout = QVBoxLayout()
-        left_layout.addWidget(self.telemetry_label)
-        left_layout.addWidget(self.telemetry_display)
-        left_layout.addWidget(self.start_button)
-        left_layout.addWidget(self.stop_button)
+        left_layout.addLayout(top_layout)
 
         right_layout = QVBoxLayout()
         right_layout.addWidget(self.altitude_plot)
@@ -40,12 +52,22 @@ class CanSatGCS(QMainWindow):
         right_layout.addWidget(self.velocity_plot)
         right_layout.addWidget(self.temperature_plot)
 
+        top_layout_main = QHBoxLayout()
+        top_layout_main.addWidget(self.endeavour_label)
+        top_layout_main.addStretch(1)
+        top_layout_main.addWidget(self.current_time_label)
+
         central_layout = QHBoxLayout()
         central_layout.addLayout(left_layout)
         central_layout.addLayout(right_layout)
 
+        main_layout = QVBoxLayout()
+        main_layout.addLayout(top_layout_main)
+        main_layout.addLayout(central_layout)
+        left_layout.addWidget(self.table_widget)
+
         central_widget = QWidget()
-        central_widget.setLayout(central_layout)
+        central_widget.setLayout(main_layout)
         self.setCentralWidget(central_widget)
 
         self.telemetry_timer = QTimer()
@@ -58,6 +80,11 @@ class CanSatGCS(QMainWindow):
         self.pressure_values = []
         self.velocity_values = []
         self.temperature_values = []
+
+        # Timer for updating the current time
+        self.update_time_timer = QTimer()
+        self.update_time_timer.timeout.connect(self.update_current_time)
+        self.update_time_timer.start(1000)  # Update time every 1000 ms
 
     def create_plot(self, title, xlabel, ylabel):
         figure, ax = plt.subplots()
@@ -82,11 +109,13 @@ class CanSatGCS(QMainWindow):
         self.velocity_values.append(random.uniform(0, 5))  # Replace with actual velocity data
         self.temperature_values.append(random.uniform(20, 30))  # Replace with actual temperature data
 
-        self.telemetry_display.append(f"Telemetry Data: {self.telemetry_data}")
         self.plot_data(self.altitude_plot, self.time_values, self.altitude_values)
         self.plot_data(self.pressure_plot, self.time_values, self.pressure_values)
         self.plot_data(self.velocity_plot, self.time_values, self.velocity_values)
         self.plot_data(self.temperature_plot, self.time_values, self.temperature_values)
+
+        # Update table values
+        self.update_table_values()
 
     def plot_data(self, plot_canvas, x_values, y_values):
         figure = plot_canvas.figure
@@ -94,6 +123,23 @@ class CanSatGCS(QMainWindow):
         ax.clear()
         ax.plot(x_values, y_values, marker='o', linestyle='-', color='b')
         plot_canvas.draw()
+
+    def update_current_time(self):
+        current_time = QTime.currentTime().toString("hh:mm:ss")
+        self.current_time_label.setText(current_time)
+
+    def update_table_values(self):
+        attributes = ["TEAM_ID", "MISSION_TIME", "MODE", "SIMULATION_STATE", "ALTITUDE", "VELOCITY",
+                      "PRESSURE", "VOLTAGE", "GPS TIME", "GPS LATITUDE", "GPS LONGITUDE", "TILT_X", "TILT_Y"]
+
+        # Update table values based on simulated data
+        values = ["2006", str(self.telemetry_data), "Mode Value", "Simulation State", str(self.altitude_values[-1]),
+                  str(self.velocity_values[-1]), str(self.pressure_values[-1]), "Voltage Value",
+                  "GPS Time Value", "GPS Latitude Value", "GPS Longitude Value", "Tilt_X Value", "Tilt_Y Value"]
+
+        for row, (attribute, value) in enumerate(zip(attributes, values)):
+            self.table_widget.setItem(row, 0, QTableWidgetItem(attribute))
+            self.table_widget.setItem(row, 1, QTableWidgetItem(value))
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
