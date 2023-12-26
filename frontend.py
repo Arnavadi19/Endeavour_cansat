@@ -120,7 +120,6 @@ class CanSatGCS(QMainWindow):
     def plot_data(self, plot_canvas, x_values, y_values):
         figure = plot_canvas.figure
         ax = figure.gca()
-        ax.clear()
         ax.plot(x_values, y_values, marker='o', linestyle='-', color='b')
         plot_canvas.draw()
 
