@@ -36,6 +36,8 @@ class CanSatGCS(QMainWindow):
         self.table_widget.setColumnCount(2)
         self.table_widget.setRowCount(13)
         self.table_widget.setHorizontalHeaderLabels(["Attribute", "Value"])
+        self.table_widget.setColumnWidth(0, 200)
+        self.table_widget.setColumnWidth(1, 220)
 
         self.telemetry_data = 0
         self.time_values = []
@@ -170,9 +172,7 @@ class CanSatGCS(QMainWindow):
         # Add placeholders for the rest of the values
         values.extend(["Voltage Value", "GPS Time Value", "GPS Latitude Value", "GPS Longitude Value",
                        "Tilt_X Value", "Tilt_Y Value"])
-
-        # Add placeholders for the rest of the values
-        values.extend([""] * (len(attributes) - len(values)))
+        # values.extend([""] * (len(attributes) - len(values)))
 
         for row, (attribute, value) in enumerate(zip(attributes, values)):
             self.table_widget.setItem(row, 0, QTableWidgetItem(attribute))
