@@ -11,6 +11,8 @@ class CanSatGCS(QMainWindow):
     def __init__(self):
         super().__init__()
 
+        self.is_telemetry_running = False
+
         self.setWindowTitle("CanSat Ground Control Station")
         self.setGeometry(100, 100, 1920, 1080)
 
@@ -34,6 +36,15 @@ class CanSatGCS(QMainWindow):
         self.table_widget.setColumnCount(2)
         self.table_widget.setRowCount(13)
         self.table_widget.setHorizontalHeaderLabels(["Attribute", "Value"])
+
+        self.telemetry_data = 0
+        self.time_values = []
+        self.altitude_values = []
+        self.pressure_values = []
+        self.velocity_values = []
+        self.temperature_values = []
+
+        self.update_table_values()
 
         self.start_button.clicked.connect(self.start_telemetry)
         self.stop_button.clicked.connect(self.stop_telemetry)
@@ -95,9 +106,11 @@ class CanSatGCS(QMainWindow):
         return canvas
 
     def start_telemetry(self):
+        self.is_telemetry_running = True
         self.telemetry_timer.start(1000)  # Update telemetry every 1000 ms
 
     def stop_telemetry(self):
+        self.is_telemetry_running = False
         self.telemetry_timer.stop()
 
     def update_telemetry(self):
@@ -131,10 +144,35 @@ class CanSatGCS(QMainWindow):
         attributes = ["TEAM_ID", "MISSION_TIME", "MODE", "SIMULATION_STATE", "ALTITUDE", "VELOCITY",
                       "PRESSURE", "VOLTAGE", "GPS TIME", "GPS LATITUDE", "GPS LONGITUDE", "TILT_X", "TILT_Y"]
 
+        simulation_state = 'Y' if self.is_telemetry_running else 'N'
+
         # Update table values based on simulated data
-        values = ["2006", str(self.telemetry_data), "Mode Value", "Simulation State", str(self.altitude_values[-1]),
-                  str(self.velocity_values[-1]), str(self.pressure_values[-1]), "Voltage Value",
-                  "GPS Time Value", "GPS Latitude Value", "GPS Longitude Value", "Tilt_X Value", "Tilt_Y Value"]
+        values = ["2006", str(self.telemetry_data), "Mode Value", simulation_state]
+
+        # Check if altitude_values is not empty before accessing its last element
+        if self.altitude_values:
+            values.append(str(self.altitude_values[-1]))
+        else:
+            values.append("")
+
+        # Check if velocity_values is not empty before accessing its last element
+        if self.velocity_values:
+            values.append(str(self.velocity_values[-1]))
+        else:
+            values.append("")
+
+        # Check if pressure_values is not empty before accessing its last element
+        if self.pressure_values:
+            values.append(str(self.pressure_values[-1]))
+        else:
+            values.append("")
+
+        # Add placeholders for the rest of the values
+        values.extend(["Voltage Value", "GPS Time Value", "GPS Latitude Value", "GPS Longitude Value",
+                       "Tilt_X Value", "Tilt_Y Value"])
+
+        # Add placeholders for the rest of the values
+        values.extend([""] * (len(attributes) - len(values)))
 
         for row, (attribute, value) in enumerate(zip(attributes, values)):
             self.table_widget.setItem(row, 0, QTableWidgetItem(attribute))
