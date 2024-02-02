@@ -6,6 +6,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 import random
+import pandas as pd
+
+provided_file = pd.read_csv('sample.csv')
+time_values = provided_file['time']
+pressure_values = provided_file['press']
 
 class CanSatGCS(QMainWindow):
     def __init__(self):
@@ -16,10 +21,9 @@ class CanSatGCS(QMainWindow):
         self.setWindowTitle("CanSat Ground Control Station")
         self.setGeometry(100, 100, 1920, 1080)
 
-        self.altitude_plot = self.create_plot("Altitude", "Time", "Altitude (m)")
+        
         self.pressure_plot = self.create_plot("Pressure", "Time", "Pressure (Pa)")
-        self.velocity_plot = self.create_plot("Velocity", "Time", "Velocity (m/s)")
-        self.temperature_plot = self.create_plot("Temperature", "Time", "Temperature (°C)")
+        
 
         self.start_button = QPushButton("Start Simulation mode")
         self.stop_button = QPushButton("Stop Simulation mode")
@@ -41,10 +45,7 @@ class CanSatGCS(QMainWindow):
 
         self.telemetry_data = 0
         self.time_values = []
-        self.altitude_values = []
         self.pressure_values = []
-        self.velocity_values = []
-        self.temperature_values = []
 
         self.update_table_values()
 
@@ -60,10 +61,7 @@ class CanSatGCS(QMainWindow):
         left_layout.addLayout(top_layout)
 
         right_layout = QVBoxLayout()
-        right_layout.addWidget(self.altitude_plot)
         right_layout.addWidget(self.pressure_plot)
-        right_layout.addWidget(self.velocity_plot)
-        right_layout.addWidget(self.temperature_plot)
 
         top_layout_main = QHBoxLayout()
         top_layout_main.addWidget(self.endeavour_label)
@@ -89,10 +87,7 @@ class CanSatGCS(QMainWindow):
         # Initialize telemetry data
         self.telemetry_data = 0
         self.time_values = []
-        self.altitude_values = []
         self.pressure_values = []
-        self.velocity_values = []
-        self.temperature_values = []
 
         # Timer for updating the current time
         self.update_time_timer = QTimer()
@@ -116,21 +111,24 @@ class CanSatGCS(QMainWindow):
         self.telemetry_timer.stop()
 
     def update_telemetry(self):
-        # Simulated telemetry update with random data
-        self.telemetry_data += 1
-        self.time_values.append(self.telemetry_data)
-        self.altitude_values.append(random.uniform(0, 100))  # Replace with actual altitude data
-        self.pressure_values.append(random.uniform(90000, 110000))  # Replace with actual pressure data
-        self.velocity_values.append(random.uniform(0, 5))  # Replace with actual velocity data
-        self.temperature_values.append(random.uniform(20, 30))  # Replace with actual temperature data
+        if self.telemetry_data < len(time_values):
+            # Extract the next time and pressure value from the 'sample.csv'
+            current_time = time_values[self.telemetry_data]
+            current_pressure = pressure_values[self.telemetry_data]
 
-        self.plot_data(self.altitude_plot, self.time_values, self.altitude_values)
-        self.plot_data(self.pressure_plot, self.time_values, self.pressure_values)
-        self.plot_data(self.velocity_plot, self.time_values, self.velocity_values)
-        self.plot_data(self.temperature_plot, self.time_values, self.temperature_values)
+            self.time_values.append(current_time)
+            self.pressure_values.append(current_pressure)
 
-        # Update table values
-        self.update_table_values()
+            # Plot the data
+            self.plot_data(self.pressure_plot, self.time_values, self.pressure_values)
+
+            # Update table values
+            self.update_table_values()
+
+            self.telemetry_data += 1
+        else:
+            # Stop telemetry when all data points have been plotted
+            self.stop_telemetry()
 
     def plot_data(self, plot_canvas, x_values, y_values):
         figure = plot_canvas.figure
@@ -151,18 +149,6 @@ class CanSatGCS(QMainWindow):
         # Update table values based on simulated data
         values = ["2006", str(self.telemetry_data), "Mode Value", simulation_state]
 
-        # Check if altitude_values is not empty before accessing its last element
-        if self.altitude_values:
-            values.append(str(self.altitude_values[-1]))
-        else:
-            values.append("")
-
-        # Check if velocity_values is not empty before accessing its last element
-        if self.velocity_values:
-            values.append(str(self.velocity_values[-1]))
-        else:
-            values.append("")
-
         # Check if pressure_values is not empty before accessing its last element
         if self.pressure_values:
             values.append(str(self.pressure_values[-1]))
@@ -172,7 +158,6 @@ class CanSatGCS(QMainWindow):
         # Add placeholders for the rest of the values
         values.extend(["Voltage Value", "GPS Time Value", "GPS Latitude Value", "GPS Longitude Value",
                        "Tilt_X Value", "Tilt_Y Value"])
-        # values.extend([""] * (len(attributes) - len(values)))
 
         for row, (attribute, value) in enumerate(zip(attributes, values)):
             self.table_widget.setItem(row, 0, QTableWidgetItem(attribute))
