@@ -1,0 +1,12 @@
+GCS
+main.py : frontend with graphs for sim mode (graph in a matplotlib frame)
+read_csv.py: read pressure sim values and store it .create telemetry string and transfer it via xbee to fsw
+serial_to_csv.py: read csv values and send serial to the GS
+csv_plotter.py: reads and plots csv (called by main.py)
+sample.csv: contains the provided CSV file by cansat
+
+FSW (default  = fs_1)
+read_serial.py: make a list of telemetry strings in correct format. save latest string onto the eeprom and finally save the csv on sd card.
+sensor_data_reader.py: read incoming values and on sim_enable switch pressure values to the sim values. 
+save_video.py: save camera data on the sd card.
+state_selector.py: choose flt state and at each state execute appropriate fs protocol
